@@ -1,0 +1,14 @@
+<%- include('partials/header') %>
+
+
+<h1>Display a dashboard/kanban style list of the users tasks.</h1>
+<div class="container">
+<% lists.forEach(function(list){ %>
+<div class="list">
+    <h2><%= list.title %></h2>
+    <%- include('partials/card', {items: list.items}) %>
+</div>
+<% });%>
+</div>
+
+<%- include('partials/footer') %>

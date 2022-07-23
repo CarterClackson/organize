@@ -1,0 +1,9 @@
+.container {
+    max-width: 100% !important;
+    display: flex;
+}
+.list {
+    display: flex;
+    flex-direction:column;
+    flex-basis: 250px;
+}
