@@ -45,12 +45,6 @@ const userSchema = new mongoose.Schema ({
     googleId: String,
 });
 
-const boardSchema = new mongoose.Schema ({
-    owner: String,
-    name: String,
-    lists: [String],
-    collaborators: [String]
-});
 
 const itemSchema = new mongoose.Schema ({
     owner: String,
@@ -68,6 +62,13 @@ const listSchema = new mongoose.Schema ({
     owner: String,
     title: String,
     items: [itemSchema],
+    collaborators: [String]
+});
+
+const boardSchema = new mongoose.Schema ({
+    owner: String,
+    name: String,
+    lists: [String],
     collaborators: [String]
 });
 
@@ -181,22 +182,24 @@ app.get('/dashboard', function(req, res) {
 
 app.get('/board/:id', function(req, res) {
     if (req.isAuthenticated()) { // Check if user is logged in, if not, redirect to log in. They are secret after all...
-        Board.findOne({'id' : ':id'}, function(err, foundBoards) { // This will work once we are creating lists/items with the actual user account.
+        const requestedBoard = req.params.id;
+        Board.findOne({_id : requestedBoard }, function(err, foundBoards) { // This will work once we are creating lists/items with the actual user account.
             if (err) {
                 console.log(err);
             } else {
-                const listArray = [];
-                foundBoards.lists.forEach(function(list) {
-                    List.find({id: list}, function(err, foundLists) {
-                    if(err) {
-                        console.log(err);
-                    } else {
-                        console.log(foundLists); //This is returning two arrays, each with one list in them.
-                        console.log(foundLists.length);
-                        res.render('partials/list', {lists: foundLists});
-                    }
+                const arrayOfLists = [];
+                for (var i = 0; i < foundBoards.lists.length; i++) {
+                    console.log(foundBoards.lists[0]);
+                    List.findOne( { _id : foundBoards.lists[i]  }, function(err, foundList) {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            arrayOfLists[i] = foundList;
+                        }
                     });
-                });
+                }
+                //console.log(foundBoards.lists);
+                res.render('partials/list', { lists: arrayOfLists } );
             }
         });
     } else {
@@ -258,6 +261,37 @@ app.get('/auth/google/secrets',
 
 app.listen(3000, function() {
     console.log('Server started');
+});
+
+app.post('/dashboard', function(req, res) {
+    const initList = new List ({
+        owner: req.user.id,
+        title: 'My First List!',
+        items: [{
+            owner: req.user.id,
+            assigned: req.user.id,
+            title: 'This is your first task',
+            content: 'Tasks can be created or destroyed, moved between names, and set to done.',
+            status: 'New',
+        },
+        {
+            owner: req.user.id,
+            assigned: req.user.id,
+            title: 'Feel free to play around to see how tasks are added, removed, updated, and managed.',
+            content: 'You can have multiple boards, each with multiple lists.',
+            status: 'New',
+        }]
+    });
+
+    const newBoard = new Board ({
+        owner: req.user.id,
+        name: req.body.boardName,
+        collaborators: [req.user.id],
+        lists: initList._id
+    });
+    initList.save();
+    newBoard.save();
+    res.redirect('/dashboard');
 });
 
 app.post('/register', function(req, res) {
