@@ -34,7 +34,7 @@ app.use(passport.session()) //Tell passport to use session.
 main().catch(err => console.log(err));
 
 async function main() {
-    await mongoose.connect('mongodb://127.0.0.1:27017/userDB', {useNewUrlParser: true});
+    await mongoose.connect('mongodb://127.0.0.1:27017/organizeDB', {useNewUrlParser: true});
 }
 
 const userSchema = new mongoose.Schema ({
@@ -43,6 +43,13 @@ const userSchema = new mongoose.Schema ({
     email: String,
     password: String,
     googleId: String,
+});
+
+const boardSchema = new mongoose.Schema ({
+    owner: String,
+    name: String,
+    lists: [String],
+    collaborators: [String]
 });
 
 const itemSchema = new mongoose.Schema ({
@@ -78,6 +85,7 @@ listSchema.plugin(findOrCreate);
 commentSchema.plugin(findOrCreate);
 
 const User = new mongoose.model('User', userSchema);
+const Board = new mongoose.model('Board', boardSchema);
 const Item = new mongoose.model('Item', itemSchema);
 const List = new mongoose.model('List', listSchema);
 const Comment = new mongoose.model('Comment', commentSchema);
@@ -102,6 +110,12 @@ const secondList = new List ({
         status: 'New',
     }]
 });
+
+const newBoard = new Board ({
+    owner: '62dd87087edd84b21d2c5472',
+    name: 'My First Board',
+});
+//newBoard.save();
 //secondList.save();
 const newItem = new Item ({
     owner: '62dc6d67a45e46069afb1929',
@@ -127,9 +141,7 @@ const newComment = new Comment ({
 passport.use(User.createStrategy()); // Creates a local login strategy.
 
 passport.use(new localStrategy(User.authenticate())); // Necessary to have the user authenticated when they try to go back to /secrets after login once.
-passport.serializeUser(function(user, done) {
-    done(null, user.id);
-}); 
+passport.serializeUser(function(user, done) { done(null, user.id); }); 
 passport.deserializeUser(function(id, done) {
     User.findById(id, function(err, user) {
         done(err, user);
@@ -155,17 +167,42 @@ app.get('/', function(req, res) {
 
 app.get('/dashboard', function(req, res) {
     if (req.isAuthenticated()) { // Check if user is logged in, if not, redirect to log in. They are secret after all...
-        List.find({"owner" : "62dc6d67a45e46069afb1929"}, function(err, foundLists) {
+        Board.find({"owner" : req.user.id}, function(err, foundBoards) { // This will work once we are creating lists/items with the actual user account.
             if (err) {
                 console.log(err);
             } else {
-                res.render('dashboard', {lists: foundLists}); // Render the secrets view with foundUsers being passed in.
+                res.render('dashboard', {boards: foundBoards}); // Render the dashboard view with foundUsers being passed in.
             }
         });
     } else {
         res.redirect('/login');
     }
-})
+});
+
+app.get('/board/:id', function(req, res) {
+    if (req.isAuthenticated()) { // Check if user is logged in, if not, redirect to log in. They are secret after all...
+        Board.findOne({'id' : ':id'}, function(err, foundBoards) { // This will work once we are creating lists/items with the actual user account.
+            if (err) {
+                console.log(err);
+            } else {
+                const listArray = [];
+                foundBoards.lists.forEach(function(list) {
+                    List.find({id: list}, function(err, foundLists) {
+                    if(err) {
+                        console.log(err);
+                    } else {
+                        console.log(foundLists); //This is returning two arrays, each with one list in them.
+                        console.log(foundLists.length);
+                        res.render('partials/list', {lists: foundLists});
+                    }
+                    });
+                });
+            }
+        });
+    } else {
+        res.redirect('/login');
+    }
+});
 
 app.get('/login', function(req, res) {
     res.render('login');

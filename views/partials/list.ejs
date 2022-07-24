@@ -1,0 +1,11 @@
+<%- include('header') %>
+<div class="container-new">
+<% lists.forEach(function(list){ %>
+<div class="list">
+    <h2><%= list.title %></h2>
+    <%- include('card', {items: list.items}) %>
+</div>
+<% });%>
+</div>
+
+<%- include('footer') %>
