@@ -1,6 +1,11 @@
-<% for(var i = 0; i < items.length; i++) { %>
+<% items.forEach(function(item) {%>
     <div class="card">
-        <h4><%= items[i].title %></h4>
-        <p><%= item[i].content %></p>
+        <form action="/updateItem" method="post">
+            <input type="text" name="itemTitle" value="<%= item.title %>" onChange="this.form.submit()">
+            <input type="text" name="itemContent" value="<%= item.content %>" onChange="this.form.submit()">
+            <input type="hidden" name="listID" value="<%=list.id%>">
+            <input type="hidden" name="itemID" value="<%=item.id%>">
+        </form>
     </div>
-<% } %>
+<% }); %> 
+</div>

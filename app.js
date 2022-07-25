@@ -61,7 +61,7 @@ const itemSchema = new mongoose.Schema ({
 const listSchema = new mongoose.Schema ({
     owner: String,
     title: String,
-    items: [itemSchema],
+    items: [String],
     collaborators: [String]
 });
 
@@ -183,23 +183,41 @@ app.get('/dashboard', function(req, res) {
 app.get('/board/:id', function(req, res) {
     if (req.isAuthenticated()) { // Check if user is logged in, if not, redirect to log in. They are secret after all...
         const requestedBoard = req.params.id;
+        const arrayOfLists = [];
+        const arrayOfItems = [];
+        var j = 0; 
         Board.findOne({_id : requestedBoard }, function(err, foundBoards) { // This will work once we are creating lists/items with the actual user account.
             if (err) {
                 console.log(err);
             } else {
-                const arrayOfLists = [];
                 for (var i = 0; i < foundBoards.lists.length; i++) {
-                    console.log(foundBoards.lists[0]);
-                    List.findOne( { _id : foundBoards.lists[i]  }, function(err, foundList) {
+                    List.findOne( { _id : foundBoards.lists[i] }, function(err, foundList) {
                         if (err) {
                             console.log(err);
                         } else {
                             arrayOfLists[i] = foundList;
+                            if (i === foundBoards.lists.length) {
+                                // We need to also put each of the items into those arrays..
+                                arrayOfLists.forEach(function(list) {
+                                    list.items.forEach(function(item) {
+                                        Item.findOne({_id : item}, function(err, foundItem) {
+                                            if (err) {
+                                                console.log(err);
+                                            } else {
+                                                arrayOfItems.push(foundItem);
+                                                if (arrayOfItems.length === list.items.length) {
+                                                    res.render('partials/list', { lists: arrayOfLists, items: arrayOfItems } );
+                                                }
+                                            }
+                                        });
+                                    });
+                                });
+                            } else {
+
+                            }
                         }
                     });
                 }
-                //console.log(foundBoards.lists);
-                res.render('partials/list', { lists: arrayOfLists } );
             }
         });
     } else {
@@ -237,7 +255,7 @@ app.get('/submit', function(req, res) {
     } else {
         res.redirect('/login');
     }
-})
+});
 
 app.get('/logout', function(req, res) {
     req.logout(function(err) {
@@ -264,34 +282,81 @@ app.listen(3000, function() {
 });
 
 app.post('/dashboard', function(req, res) {
+    const itemOne = new Item ({
+        owner: req.user.id,
+        assigned: req.user.id,
+        title: 'This is your first task',
+        content: 'Tasks can be created or destroyed, moved between names, and set to done.',
+        status: 'New',
+    });
+    const itemTwo = new Item ({
+        owner: req.user.id,
+        assigned: req.user.id,
+        title: 'Feel free to play around to see how tasks are added, removed, updated, and managed.',
+        content: 'You can have multiple boards, each with multiple lists.',
+        status: 'New',
+    });
     const initList = new List ({
         owner: req.user.id,
         title: 'My First List!',
-        items: [{
-            owner: req.user.id,
-            assigned: req.user.id,
-            title: 'This is your first task',
-            content: 'Tasks can be created or destroyed, moved between names, and set to done.',
-            status: 'New',
-        },
-        {
-            owner: req.user.id,
-            assigned: req.user.id,
-            title: 'Feel free to play around to see how tasks are added, removed, updated, and managed.',
-            content: 'You can have multiple boards, each with multiple lists.',
-            status: 'New',
-        }]
+        items: [itemOne._id, itemTwo._id]
     });
 
-    const newBoard = new Board ({
+    const initBoard = new Board ({
         owner: req.user.id,
         name: req.body.boardName,
         collaborators: [req.user.id],
         lists: initList._id
     });
+    itemOne.save();
+    itemTwo.save();
     initList.save();
-    newBoard.save();
-    res.redirect('/dashboard');
+    initBoard.save();
+    res.redirect('/board/' + initBoard.id);
+});
+
+app.post('/updateList', function(req, res) {
+    const referralURL = req.headers.referer;
+    var pathname = new URL(referralURL).pathname;
+    const changedListID = req.body.listID;
+    const listTitle = req.body.listTitle;
+    //List.updateOne({id: changedListID}, { $set: { title: listTitle }});
+    List.findOneAndUpdate({_id: changedListID}, {title: listTitle}, {new: true}, function(err, doc) { //Find the list referenced in the hidden input. Update whatever can be updated and then redirect to same page.
+        if (err) {
+            console.log(err);
+        } else {
+            res.redirect(pathname);
+        }
+    });
+});
+
+app.post('/updateItem', function(req, res) {
+    const referralURL = req.headers.referer;
+    var pathname = new URL(referralURL).pathname;
+    const changedListID = req.body.listID;
+    const changedItemID = req.body.itemID;
+    const itemTitle = req.body.itemTitle;
+    const itemContent = req.body.itemContent;
+
+    List.findOne({_id: changedListID}, function(err, foundList) { //Find the list referenced in the hidden input.
+        if (err) {
+            console.log(err);
+        } else {
+            foundList.items.forEach(function(item) { // On the found list, for each item contained in that list, find the item that matches the changed item ID and then update it's content. Then redirect to same page.
+                if (item === changedItemID) {
+                    Item.findOneAndUpdate({_id: changedItemID}, {title: itemTitle, content: itemContent}, function(err, doc) {
+                        if (err) {
+                            console.log(err);
+                        } else {
+                            res.redirect(pathname);
+                        }
+                    });
+                } else {
+
+                }
+            });
+        }
+    });
 });
 
 app.post('/register', function(req, res) {

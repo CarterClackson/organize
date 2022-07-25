@@ -1,10 +1,12 @@
 <%- include('header') %>
 <div class="container-new">
 <% lists.forEach(function(list) {%>
-    <% console.log(list); %>
     <div class="list">
-        <h2><%= list.title %></h2>
-        <%- include('card', {items: list.items}) %>
+        <form action="/updateList" method="post">
+            <input type="text" name="listTitle" value="<%= list.title %>" onChange="this.form.submit()">
+            <input type="hidden" name="listID" value="<%=list.id%>">
+        </form>
+        <%- include('card', {items: items, list: list}) %>
     </div>
 <% }); %> 
 </div>
