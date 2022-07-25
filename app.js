@@ -44,8 +44,6 @@ const userSchema = new mongoose.Schema ({
     password: String,
     googleId: String,
 });
-
-
 const itemSchema = new mongoose.Schema ({
     owner: String,
     assigned: String,
@@ -57,21 +55,18 @@ const itemSchema = new mongoose.Schema ({
     relatedTasks: [String],
     comments: [String]
 });
-
 const listSchema = new mongoose.Schema ({
     owner: String,
     title: String,
     items: [String],
     collaborators: [String]
 });
-
 const boardSchema = new mongoose.Schema ({
     owner: String,
     name: String,
     lists: [String],
     collaborators: [String]
 });
-
 const commentSchema = new mongoose.Schema ({
     commentor: String,
     content: String,
@@ -140,7 +135,6 @@ const newComment = new Comment ({
 //newComment.save();
 
 passport.use(User.createStrategy()); // Creates a local login strategy.
-
 passport.use(new localStrategy(User.authenticate())); // Necessary to have the user authenticated when they try to go back to /secrets after login once.
 passport.serializeUser(function(user, done) { done(null, user.id); }); 
 passport.deserializeUser(function(id, done) {
@@ -167,12 +161,19 @@ app.get('/', function(req, res) {
 });
 
 app.get('/dashboard', function(req, res) {
-    if (req.isAuthenticated()) { // Check if user is logged in, if not, redirect to log in. They are secret after all...
-        Board.find({"owner" : req.user.id}, function(err, foundBoards) { // This will work once we are creating lists/items with the actual user account.
+    if (req.isAuthenticated()) {
+        User.findOne({"id" : req.user.id}, function(err, foundUser) {
             if (err) {
                 console.log(err);
             } else {
-                res.render('dashboard', {boards: foundBoards}); // Render the dashboard view with foundUsers being passed in.
+                Board.find({"owner" : req.user.id}, function(err, foundBoards) { // This will work once we are creating lists/items with the actual user account.
+                    if (err) {
+                        console.log(err);
+                    } else {
+                        console.log(foundUser);
+                        res.render('dashboard', {boards: foundBoards, currentUser: foundUser}); // Render the dashboard view with foundUsers being passed in.
+                    }
+                });
             }
         });
     } else {
@@ -268,7 +269,7 @@ app.get('/logout', function(req, res) {
 });
 
 app.get('/auth/google',
-  passport.authenticate('google', { scope: ['profile'] }));
+  passport.authenticate('google', { scope: ['profile' , 'email'] }));
 
 app.get('/auth/google/secrets', 
   passport.authenticate('google', { failureRedirect: '/login' }),
@@ -301,7 +302,6 @@ app.post('/dashboard', function(req, res) {
         title: 'My First List!',
         items: [itemOne._id, itemTwo._id]
     });
-
     const initBoard = new Board ({
         owner: req.user.id,
         name: req.body.boardName,

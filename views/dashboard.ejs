@@ -1,7 +1,7 @@
 <%- include('partials/header') %>
 
-
-<h1>Display a dashboard/kanban style list of the users tasks.</h1>
+<div id="main">
+<h1>Your Boards</h1>
 <div class="container-new">
 <% boards.forEach(function(board){ %>
 <a href="board/<%= board.id %>">
@@ -15,5 +15,5 @@
     <button type="submit">✔</button>
 </form>
 </div>
-
+</div>
 <%- include('partials/footer') %>

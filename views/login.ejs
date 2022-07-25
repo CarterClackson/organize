@@ -1,35 +1,29 @@
 <%- include('partials/header') %>
+<style>
+    .full-width-container { display: block !important; }
+</style>
+<div class="login-page">
+<div class="login-container">
+  <h1 class="center">Login</h1>
 
-<div class="container mt-5">
-  <h1>Login</h1>
-
-  <div class="row">
-    <div class="col-sm-8">
-      <div class="card">
-        <div class="card-body">
-
-          <!-- Makes POST request to /login route -->
+  <div class="login-form">
+        <div class="">
           <form action="/login" method="POST">
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input type="email" class="form-control" name="username">
+            <div class="">
+              <input type="email" class="first" name="username" placeholder="Email">
             </div>
-            <div class="form-group">
-              <label for="password">Password</label>
-              <input type="password" class="form-control" name="password">
+            <div class="">
+              <input type="password" class="last" name="password" placeholder="Password">
             </div>
-            <button type="submit" class="btn btn-dark">Login</button>
+            <button type="submit" class="btn-blue">Register</button>
           </form>
-
-        </div>
-      </div>
     </div>
-
-<div class="col-sm-4">
-      <div class="card">
-        <div class="card-body">
-          <a class="btn btn-block" href="/auth/google" role="button">
-            <i class="fab fa-google"></i>
+<span class="center or">- or -</span>
+<div class="social-login">
+      <div class="">
+        <div class="">
+          <a class="social-option" href="/auth/google" role="button">
+            <img src="/images/google.png" style="width: 30px; margin-top: -3px;">
             Sign In with Google
           </a>
         </div>
@@ -39,4 +33,6 @@
   </div>
 </div>
 
-<%- include('partials/footer') %>
+</div>
+
+<%- include('partials/header') %>
